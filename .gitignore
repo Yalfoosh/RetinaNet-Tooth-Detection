@@ -105,3 +105,4 @@ venv.bak/
 data/
 save/
 last_preparation.txt
+.idea/
