@@ -1,5 +1,4 @@
 import os
-import datetime
 
 # If you're changing these, be sure to change them in data_preparation.py as well.
 csv_folder = os.path.abspath(os.path.join(os.curdir, "data/CSV"))

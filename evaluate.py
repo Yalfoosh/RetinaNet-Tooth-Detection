@@ -10,7 +10,6 @@ from keras_retinanet.utils.visualization import draw_box, draw_caption
 from keras_retinanet.utils.colors import label_color
 
 import cv2
-import datetime
 import matplotlib.pyplot as plt
 import numpy
 import os
