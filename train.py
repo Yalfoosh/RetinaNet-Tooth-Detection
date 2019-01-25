@@ -4,6 +4,7 @@
 
 import data_preparation as preparation
 import save_load
+import globals
 
 from keras_retinanet import models as retinanet_models
 from keras_retinanet import losses as retinanet_losses
@@ -11,6 +12,8 @@ from keras_retinanet.preprocessing import csv_generator as csv
 import keras
 import os
 import datetime
+import gc
+import sys
 
 #
 # Methods
@@ -25,19 +28,19 @@ def prepare_model(save_folder: str):
         if loaded_model is not None:
             return loaded_model
     else:
-        return retinanet_models.backbone(default_backbone).retinanet(num_classes=number_of_teeth_types), 0
+        return retinanet_models.backbone(globals.default_backbone)\
+                               .retinanet(num_classes=globals.number_of_teeth_types), 0
 
 
-# The reason this is a method is so when a OOM error occurs, it tries again.
-def train(epochs: int):
+def train(training_model, last_epoch: int, epochs: int):
     loss = {"regression": retinanet_losses.smooth_l1(), "classification": retinanet_losses.focal()}
-    generator = csv.CSVGenerator(csv_data_file=data_file, csv_class_file=class_file)
+    generator = csv.CSVGenerator(csv_data_file=globals.data_file, csv_class_file=globals.class_file)
 
     i = last_epoch
     while i < epochs:
         try:
             # I seem to be getting way faster convergence with these values than the flat 1e-5 learning rate.
-            if i < 2:
+            if i < 5:
                 optimizer = keras.optimizers.adam(lr=1e-3, clipnorm=0.001)
             elif i < 10:
                 optimizer = keras.optimizers.adam(lr=1e-4, clipnorm=0.001)
@@ -46,47 +49,47 @@ def train(epochs: int):
             else:
                 optimizer = keras.optimizers.adam(lr=1e-6, clipnorm=0.001)
 
-            model.compile(loss=loss, optimizer=optimizer)
-            history = model.fit_generator(generator=generator, verbose=1, workers=4, max_queue_size=32,
-                                          steps_per_epoch=number_of_files)
+            training_model.compile(loss=loss, optimizer=optimizer)
+            history = training_model.fit_generator(generator=generator, verbose=1)
+
+            i += 1
 
             model_save_file_name = save_load.generate_save_string(datetime.datetime.now(),
-                                                                  i + 1,
+                                                                  i,
                                                                   history.history["regression_loss"][0],
                                                                   history.history["classification_loss"][0])
 
-            model.save(os.path.join(model_save_folder, model_save_file_name), overwrite=True)
+            training_model.save(os.path.join(globals.model_save_folder, model_save_file_name), overwrite=True)
+
+            # Keras has some memory leaks, this should fix it.
+            del training_model
+            del history
+            gc.collect()
+
+            training_model = prepare_model(globals.model_save_folder)[0]
+        except Exception as e:
+            print("\n")
+            print(e, file=sys.stderr)
+
             i += 1
-        except Exception:
+            model_save_file_name = save_load.generate_save_string(datetime.datetime.now(), i, 1, 1)
+            training_model.save(os.path.join(globals.model_save_folder, model_save_file_name), overwrite=True)
+
+            del training_model
+            gc.collect()
+
+            training_model = prepare_model(globals.model_save_folder)[0]
             continue
 
-#
-# Variables
-#
 
+def main():
+    preparation.prepare_data()
+    model, last_epoch = prepare_model(globals.model_save_folder)
+    train(model, last_epoch, 100)
 
-# If you're changing these, be sure to change them in data_preparation.py as well.
-csv_folder = os.path.abspath(os.curdir + "/data/CSV")
-images_folder = os.path.abspath(os.curdir + "/data/Images")
-xml_folder = os.path.abspath(os.curdir + "/data/XML")
-
-model_save_folder = os.path.abspath(os.curdir + "/save")
-model_path = os.path.join(model_save_folder, str(datetime.datetime.now()).replace(":", "-") + ".h5")
-
-# 32 + IMPLANTATI
-number_of_teeth_types = 33
-number_of_files = 3995
-
-# This one was set as default although other backbones can be used.
-default_backbone = "resnet50"
-
-data_file = os.path.abspath(os.path.join(csv_folder, "data.csv"))
-class_file = os.path.abspath(os.path.join(csv_folder, "classes.csv"))
 
 #
 # Code
 #
 
-preparation.prepare_data()
-model, last_epoch = prepare_model(model_save_folder)
-train(100)
+main()

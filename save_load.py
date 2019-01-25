@@ -1,9 +1,10 @@
+from globals import file_value_separator as separator
+
 import datetime
 import keras
 import os
 from keras_retinanet.models import resnet
-
-separator = " - "
+from keras_retinanet import models
 
 
 def generate_save_string(first_saved: datetime.datetime,
@@ -50,3 +51,14 @@ def load_model(folder_path: str, file_name: str):
     model = keras.models.load_model(filepath=load_path, custom_objects=custom_objects)
 
     return model, epochs
+
+
+def load_latest_model(folder_path: str):
+    if os.path.exists(folder_path) and len(os.listdir(folder_path)) > 0:
+        file_name = os.listdir(folder_path)[-1]
+        return load_model(folder_path, file_name)
+
+
+def get_inference_model(training_model):
+    models.check_training_model(training_model)
+    return models.convert_model(training_model)
