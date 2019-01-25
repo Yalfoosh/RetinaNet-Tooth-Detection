@@ -1,8 +1,11 @@
-from PIL import Image
+from PIL import Image, ImageFile
 from resizeimage import resizeimage
 import os
 
 import globals
+
+# Some images are truncated and it's a problem since it crashes training.
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 # Rescales all images in the source folder to have the width specified and saves them to the destination folder.
