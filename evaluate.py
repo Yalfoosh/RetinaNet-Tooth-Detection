@@ -40,13 +40,11 @@ def mark_and_return_image(inference_model=model, image_path: str = ""):
         original_image = preprocess_image(original_image)
 
         boxes, scores, labels = inference_model.predict_on_batch(numpy.expand_dims(original_image, axis=0))
+        boxes, scores, labels = globals.DetectedObject.decompose_list(globals.get_the_most_likely_detected_objects(globals.DetectedObject.from_pairs(boxes[0], scores[0], labels[0]), suppress_iou_higher_than=0.4))
 
+        # boxes, scores, labels = globals.keep_detections_with_the_highest_probability(boxes, scores, labels)
         # visualize detections
-        for box, score, label in zip(boxes[0], scores[0], labels[0]):
-            # Scores are sorted so you can break the first time you encounter <0.5
-            if score < globals.iou_threshold:
-                break
-
+        for box, score, label in zip(boxes, scores, labels):
             color = label_color(label)
 
             b = box.astype(int)
