@@ -327,6 +327,7 @@ Old Saves/
 [Inference Results]/00102.jpg.jpg
 [Inference Results]/00103.jpg.jpg
 [Inference Results]/00104.jpg.jpg
+<<<<<<< HEAD
 [Inference Results].7z
 new data/csv/data.csv
 new data/images/00001.jpg
@@ -9406,3 +9407,10 @@ new data/xml/04155.xml
 new data/xml/04156.xml
 new data/xml/04157.xml
 new data/classes.csv
+=======
+Inference Old/00028.jpg.jpg
+Inference Old/00019.jpg.jpg
+Inference Old/00010.jpg.jpg
+Inference Old/Anči.png.jpg
+Inference Old/00037.jpg.jpg
+>>>>>>> 14d6f82c1e6211a7b04a86bff780f2f931948077
